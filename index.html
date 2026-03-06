@@ -99,7 +99,7 @@
 <!-- แดชบอร์ดแบบ Bubble ลอยอยู่ด้านบนสุด -->
 <div class="dashboard-bubbles" id="topDashboard">
     <div class="dash-bubble bubble-total"><i class="fa-solid fa-chart-pie"></i> รวม <span class="val" id="countAll">0</span></div>
-    <div class="dash-bubble bubble-power"><i class="fa-solid fa-bolt"></i> พลังงานไฟฟ้า/ชีวมวล <span class="val" id="countPower">0</span></div>
+    <div class="dash-bubble bubble-power"><i class="fa-solid fa-bolt"></i> ชีวมวล <span class="val" id="countPower">0</span></div>
     <div class="dash-bubble bubble-sugar"><i class="fa-solid fa-industry"></i> น้ำตาล <span class="val" id="countSugar">0</span></div>
     <div class="dash-bubble bubble-lead"><i class="fa-solid fa-vial"></i> ตะกั่ว <span class="val" id="countLead">0</span></div>
     <div class="dash-bubble bubble-sili"><i class="fa-solid fa-lungs"></i> ซิลิโคสิส <span class="val" id="countSilicosis">0</span></div>
@@ -125,7 +125,7 @@
 
     <div class="filter-section">
         <span class="filter-title">อุตสาหกรรมพลังงาน/เกษตร</span>
-        <label class="filter-row"><input type="checkbox" id="chkPower" checked onchange="updateFilters()"> <i class="fa-solid fa-bolt icon-power" style="width:18px; text-align:center;"></i> พลังงานไฟฟ้า/ชีวมวล</label>
+        <label class="filter-row"><input type="checkbox" id="chkPower" checked onchange="updateFilters()"> <i class="fa-solid fa-bolt icon-power" style="width:18px; text-align:center;"></i> โรงไฟฟ้าชีวมวล</label>
         <label class="filter-row"><input type="checkbox" id="chkSugar" checked onchange="updateFilters()"> <i class="fa-solid fa-industry icon-sugar" style="width:18px; text-align:center;"></i> โรงงานน้ำตาล</label>
         
         <span class="filter-title" style="margin-top: 10px; color:#d32f2f;"><i class="fa-solid fa-triangle-exclamation"></i> โรงงานเสี่ยง (3 กลุ่มโรค)</span>
@@ -153,7 +153,7 @@
 <!-- Scripts -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // อัปเดตข้อมูลจากไฟล์ล่าสุดทั้งหมด
+    // อัปเดตข้อมูลจากไฟล์ Excel ล่าสุด
     let factories = [
         // --- โรงงานน้ำตาล ---
         {"name":"บริษัท น้ำตาลขอนแก่น จำกัด (มหาชน)", "lat":16.73164716, "lon":102.83999402, "type":"น้ำตาล", "province":"ขอนแก่น", "district":"น้ำพอง"},
@@ -162,17 +162,14 @@
         {"name":"บริษัท น้ำตาลมิตรกาฬสินธุ์ จำกัด", "lat":16.46625081, "lon":104.03818563, "type":"น้ำตาล", "province":"กาฬสินธุ์", "district":"กุฉินารายณ์"},
         {"name":"บริษัท อุตสาหกรรมน้ำตาลอีสาน จำกัด", "lat":16.93109216, "lon":103.54548324, "type":"น้ำตาล", "province":"กาฬสินธุ์", "district":"สามชัย"},
         
-        // --- โรงไฟฟ้าชีวมวล / โรงไฟฟ้า (อัปเดตตามไฟล์ล่าสุด) ---
-        {"name":"บริษัท ขอนแก่นกรีนพาวเวอร์ จำกัด", "lat":15.85829775, "lon":102.6222808, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"พล"},
-        {"name":"บริษัท พลพาวเวอร์ ซัพพลาย จำกัด", "lat":15.84186011, "lon":102.6132026, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"พล"},
-        {"name":"บริษัท ฟินิคซ พัลพ แอนด์ เพเพอร์ จำกัด (มหาชน)", "lat":16.69980177, "lon":102.7492542, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"น้ำพอง"},
-        {"name":"บริษัท มิตรผล ไบโอ-เพาเวอร์ (ภูเวียง) จำกัด", "lat":16.49625645, "lon":102.4262672, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"หนองเรือ"},
-        {"name":"บริษัท แอ๊ดวานซ์ เอเชีย เพาเวอร์ แพลนท์ จำกัด", "lat":16.67826122, "lon":102.8180753, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"น้ำพอง"},
-        {"name":"โรงงานผลิตพลังงานไฟฟ้าจากเชื้อเพลิงก๊าซชีวภาพภูผาม่าน", "lat":16.67541569, "lon":101.824358, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"ภูผาม่าน"},
-        {"name":"โรงไฟฟ้าพลังความร้อนร่วมน้ำพอง", "lat":16.68351353, "lon":102.7359319, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"น้ำพอง"},
+        // --- โรงไฟฟ้าชีวมวล ---
+        {"name":"บริษัท ขอนแก่นกรีนพาวเวอร์ จำกัด", "lat":15.85829775, "lon":102.62228081, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"พล"},
+        {"name":"บริษัท พลพาวเวอร์ ซัพพลาย จำกัด", "lat":15.84186011, "lon":102.61320262, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"พล"},
+        {"name":"บริษัท ฟินิคซ พัลพ แอนด์ เพเพอร์ จำกัด (มหาชน)", "lat":16.69980177, "lon":102.74925420, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"น้ำพอง"},
+        {"name":"บริษัท มิตรผล ไบโอ-เพาเวอร์ (ภูเวียง) จำกัด", "lat":16.49625645, "lon":102.42626720, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"หนองเรือ"},
         {"name":"บริษัท มิตรผล ไบโอ-เพาเวอร์ (กาฬสินธุ์) จำกัด", "lat":16.46879524, "lon":104.04076774, "type":"ไฟฟ้า", "province":"กาฬสินธุ์", "district":"กุฉินารายณ์"},
         {"name":"บริษัท อีสานไบโอเพาเวอร์ จำกัด", "lat":16.92852853, "lon":103.54262517, "type":"ไฟฟ้า", "province":"กาฬสินธุ์", "district":"สามชัย"},
-        {"name":"บริษัท เอ็นเนอร์จี พลัส จำกัด (สาขา1)", "lat":16.45624437, "lon":103.993469257896, "type":"ไฟฟ้า", "province":"ร้อยเอ็ด", "district":"โพนทอง"},
+        {"name":"บริษัท เอ็นเนอร์จี พลัส จำกัด (สาขา1)", "lat":14.71738992, "lon":102.37676798, "type":"ไฟฟ้า", "province":"ร้อยเอ็ด", "district":"โพนทอง"},
         {"name":"บริษัท แอ๊ดวานซ์ คลีน เพาเวอร์ จำกัด", "lat":16.27656044, "lon":104.01235482, "type":"ไฟฟ้า", "province":"ร้อยเอ็ด", "district":"โพนทอง"},
         
         // --- โรงงานเสี่ยงโรค ---
@@ -180,31 +177,11 @@
         {"name":"ห้างหุ้นส่วนจำกัด ภักดีแผ่นดินขอนแก่น", "lat":16.6708769, "lon":101.8311352, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"ภูผาม่าน", "diseaseGroup":"Silicosis", "businessType":"การโม่ บด หรือย่อยหิน", "workers":70},
         {"name":"โรงโม่หิน ภักดีแผ่นดิน", "lat":16.6745769, "lon":101.8307919, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"ภูผาม่าน", "diseaseGroup":"Silicosis", "businessType":"การโม่ บด หรือย่อยหิน", "workers":60},
         {"name":"ฝึกวิชาชีพช่างไม้เฟอร์นิเจอร์ เรือนจำจังหวัดพล", "lat":16.42949955, "lon":102.8450238, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"พล", "diseaseGroup":"Lead Poisoning", "businessType":"ทำเครื่องเรือน", "workers":55},
-        {"name":"ฝึกวิชาชีพช่างไม้เรือนจำกลางขอนแก่น", "lat":16.4293452, "lon":102.8450131, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"เมืองขอนแก่น", "diseaseGroup":"Lead Poisoning", "businessType":"ทำเครื่องเรือน", "workers":150},
-        {"name":"บริษัท อภิโชคเฟอร์นิท จำกัด", "lat":16.44938685, "lon":102.693219, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"เมืองขอนแก่น", "diseaseGroup":"Lead Poisoning", "businessType":"ทำเครื่องเรือน", "workers":325},
-        {"name":"บริษัท อภิโชค ดีไซน์ จำกัด", "lat":16.4406754, "lon":102.6894167, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"เมืองขอนแก่น", "diseaseGroup":"Lead Poisoning", "businessType":"ทำเครื่องเรือน", "workers":282},
-        {"name":"บริษัท บีจีซี กล๊าส โซลูชั่น จำกัด", "lat":16.3275373, "lon":102.8221888, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"เมืองขอนแก่น", "diseaseGroup":"Silicosis", "businessType":"ผลิตแก้ว", "workers":129},
-        {"name":"บริษัท ไอซีอีแอนด์เอ (ประเทศไทย) จำกัด", "lat":16.3165887, "lon":102.8663773, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"เมืองขอนแก่น", "diseaseGroup":"Silicosis", "businessType":"เครื่องกระเบื้องเคลือบ", "workers":1400},
-        {"name":"บริษัท โปรคอนกรีต จำกัด", "lat":16.6467942, "lon":102.7995779, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"น้ำพอง", "diseaseGroup":"Silicosis&Asbestosis", "businessType":"ทำผลิตภัณฑ์คอนกรีต", "workers":60},
-        {"name":"ห้างหุ้นส่วนจำกัด ป.รุ่งเรืองคอนกรีต", "lat":16.4019629, "lon":102.815629, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"เมืองขอนแก่น", "diseaseGroup":"Silicosis&Asbestosis", "businessType":"ทำผลิตภัณฑ์คอนกรีต", "workers":100},
-        {"name":"ขอนคอนกรีต", "lat":16.4983465, "lon":102.8319972, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"เมืองขอนแก่น", "diseaseGroup":"Silicosis&Asbestosis", "businessType":"ทำผลิตภัณฑ์คอนกรีต", "workers":180},
-        {"name":"บริษัท นครพลัส พร็อพเพอร์ตี้ จำกัด", "lat":16.4715361, "lon":102.8581181, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"เมืองขอนแก่น", "diseaseGroup":"Silicosis&Asbestosis", "businessType":"ทำผลิตภัณฑ์คอนกรีต", "workers":80},
-        {"name":"ดีคอน ขอนแก่น - มหาสารคาม", "lat":16.2778205, "lon":102.9608688, "type":"เสี่ยงโรค", "province":"มหาสารคาม", "district":"โกสุมพิสัย", "diseaseGroup":"Silicosis&Asbestosis", "businessType":"ทำผลิตภัณฑ์คอนกรีต", "workers":100},
-        {"name":"แผนกโรงงานผลิตภัณฑ์คอนกรีต", "lat":16.7703039, "lon":102.6256017, "type":"เสี่ยงโรค", "province":"มหาสารคาม", "district":"เมืองมหาสารคาม", "diseaseGroup":"Silicosis&Asbestosis", "businessType":"ทำผลิตภัณฑ์คอนกรีต", "workers":168},
-        {"name":"บริษัท กาฬสินธุ์คอนกรีต (2000) จำกัด", "lat":16.4340778, "lon":103.512738, "type":"เสี่ยงโรค", "province":"กาฬสินธุ์", "district":"ยางตลาด", "diseaseGroup":"Silicosis&Asbestosis", "businessType":"ทำผลิตภัณฑ์คอนกรีต", "workers":55},
-        {"name":"บริษัท ศิรกร จำกัด", "lat":16.7529119, "lon":103.6162915, "type":"เสี่ยงโรค", "province":"กาฬสินธุ์", "district":"สหัสขันธ์", "diseaseGroup":"Silicosis&Asbestosis", "businessType":"ทำผลิตภัณฑ์คอนกรีต", "workers":71},
-        {"name":"ห้างหุ้นส่วนจำกัด นาคินก่อสร้าง", "lat":16.03634466, "lon":103.6564569, "type":"เสี่ยงโรค", "province":"ร้อยเอ็ด", "district":"เมืองร้อยเอ็ด", "diseaseGroup":"Silicosis", "businessType":"ซ่อมแซมเครื่องเรือน", "workers":150},
-        {"name":"บริษัท แอสเตโม โคราช เบรก ซิสเตมส์ จำกัด", "lat":16.413201, "lon":102.7077458, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"เมืองขอนแก่น", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิต/ประกอบเครื่องจักร", "workers":278},
-        {"name":"บริษัท พานาโซนิค แมนูแฟคเจอริ่ง (ประเทศไทย) จำกัด", "lat":16.6768158, "lon":102.7585729, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"น้ำพอง", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตเครื่องรับวิทยุฯ", "workers":2334},
         {"name":"บริษัท อาทิซัน ดีเวลลอปเม้นท์ จำกัด", "lat":16.7029731, "lon":102.9082944, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"น้ำพอง", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตเครื่องรับวิทยุฯ", "workers":111},
         {"name":"บริษัท ลัดดาอิเล็คทรอนิกส์ จำกัด", "lat":16.276369, "lon":102.735298, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"พระยืน", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตเครื่องรับวิทยุฯ", "workers":154},
         {"name":"บริษัท ที ไอ ที อีเล็คทรอนิคส์ จำกัด", "lat":16.44711457, "lon":102.7810231, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"เมืองขอนแก่น", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตเครื่องรับวิทยุฯ", "workers":112},
-        {"name":"บริษัท พี.เค.พี อินดัสตี้ จำกัด", "lat":16.10740449, "lon":103.6376056, "type":"เสี่ยงโรค", "province":"ร้อยเอ็ด", "district":"จังหาร", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตเครื่องรับวิทยุฯ", "workers":51},
-        {"name":"บริษัท เอส.พี.ออโต้โปรดักส์ จำกัด", "lat":16.752775, "lon":102.80845, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"น้ำพอง", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตชิ้นส่วนรถยนต์", "workers":555},
-        {"name":"บริษัท แม็กซิม่า อิเลคทรอนิคส์ จำกัด", "lat":16.5591544, "lon":102.8224822, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"เมืองขอนแก่น", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตชิ้นส่วนรถยนต์", "workers":312},
-        {"name":"บริษัท ไดชิน จำกัด", "lat":16.41257493, "lon":102.7047042, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"เมืองขอนแก่น", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตชิ้นส่วนรถยนต์", "workers":300},
-        {"name":"บริษัท เอส.พี.ออโต้ อินดัสทรี จำกัด", "lat":16.2174008, "lon":103.0916124, "type":"เสี่ยงโรค", "province":"มหาสารคาม", "district":"โกสุมพิสัย", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตชิ้นส่วนรถยนต์", "workers":110},
-        {"name":"ห้างหุ้นส่วนจำกัด เจ เอ็ม ประดับยนต์", "lat":15.99987546, "lon":103.5482457, "type":"เสี่ยงโรค", "province":"ร้อยเอ็ด", "district":"ศรีสมเด็จ", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตชิ้นส่วนรถยนต์", "workers":60}
+        {"name":"บริษัท พี.เค.พี อินดัสตี้ จำกัด", "lat":16.10740449, "lon":103.6376056, "type":"เสี่ยงโรค", "province":"ร้อยเอ็ด", "district":"จังหาร", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตเครื่องรับวิทยุฯ", "workers":51}
+    ];
 
     window.showNotification = function(msg, isError=false) {
         const notif = document.getElementById('notification');
@@ -225,7 +202,9 @@
         const reader = new FileReader();
         reader.onload = function(e) { 
             const text = e.target.result;
-            showNotification('กำลังนำเข้าข้อมูล...', false);
+            if (text.includes('')) {
+                showNotification('กำลังนำเข้าข้อมูล...', false);
+            }
             parseAndAddCSV(text); 
         };
         reader.readAsText(file, 'UTF-8');
@@ -247,7 +226,7 @@
                 cols.forEach((c, idx) => {
                     const cleanName = c.replace(/[\ufeff"']/g, '').trim(); 
                     if(cleanName === "กลุ่มโรค" || cleanName === "disease") colMap.diseaseGroup = idx;
-                    if(cleanName === "ประเภทหรือชนิดของโรงงาน" || cleanName === "ประเภท" || cleanName === "ประกอบกิจการ" || cleanName === "type") colMap.type = idx;
+                    if(cleanName === "ประเภทหรือชนิดของโรงงาน" || cleanName === "ประเภท" || cleanName === "ประกอบกิจการ") colMap.businessType = idx;
                     if(cleanName === "ชื่อโรงงาน" || cleanName === "name") colMap.name = idx;
                     if(cleanName === "อำเภอ" || cleanName === "district") colMap.district = idx;
                     if(cleanName === "จังหวัด" || cleanName === "province") colMap.province = idx;
@@ -269,11 +248,12 @@
                 
                 if (name && !isNaN(lat) && !isNaN(lon)) {
                     const diseaseGroup = colMap.diseaseGroup !== undefined ? cols[colMap.diseaseGroup] : "ไม่ระบุ";
-                    const businessType = colMap.type !== undefined ? cols[colMap.type] : "ไม่ระบุ";
+                    const businessType = colMap.businessType !== undefined ? cols[colMap.businessType] : "ไม่ระบุ";
                     let district = colMap.district !== undefined ? cols[colMap.district].replace(/อ\./g, '').trim() : "";
                     let province = colMap.province !== undefined ? cols[colMap.province].replace(/จ\.|จังหวัด/g, '').trim() : "";
                     const workers = colMap.workers !== undefined ? (parseInt(cols[colMap.workers]) || 0) : 0;
 
+                    // สกัดอำเภอ/จังหวัดจากชื่อ กรณีข้อมูลติดมากับชื่อโรงงาน (เช่น Excel โรงงานน้ำตาล)
                     if(name.includes("อ.") && name.includes("จ.")) {
                         const parts = name.split("อ.");
                         name = parts[0].trim();
@@ -282,6 +262,7 @@
                         if(!province) province = subParts[1].trim();
                     }
 
+                    // คำนวณประเภทโรงงานจากชื่อหรือประเภทธุรกิจ
                     let parsedType = "เสี่ยงโรค";
                     const txtCheck = (name + " " + businessType).toLowerCase();
                     if (txtCheck.includes("น้ำตาล")) parsedType = "น้ำตาล";
@@ -467,7 +448,7 @@
 
             if (f.type === 'ไฟฟ้า') {
                 iconHtml = '<i class="fa-solid fa-bolt icon-power"></i>';
-                popupExtra = `<i class="fa-solid fa-tag"></i> โรงงานพลังงานไฟฟ้า/ชีวมวล`;
+                popupExtra = `<i class="fa-solid fa-tag"></i> โรงไฟฟ้าชีวมวล`;
             } else if (f.type === 'น้ำตาล') {
                 iconHtml = '<i class="fa-solid fa-industry icon-sugar"></i>';
                 popupExtra = `<i class="fa-solid fa-tag"></i> โรงงานน้ำตาล`;
@@ -639,6 +620,6 @@
     }
     loadData();
 
-</script> 
+</script>
 </body>
 </html>
