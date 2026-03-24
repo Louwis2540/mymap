@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <title>Region 7 Health Risk Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Font Awesome (Icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
-    <!-- Google Fonts (Sarabun) -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Sarabun', sans-serif; background: #ffffff; overflow: hidden; }
@@ -36,9 +33,6 @@
         .risk-school { background: #3f51b5; } 
         .risk-hospital { background: #00897b; }
         
-        /* ป้ายชื่อจังหวัด */
-        .province-label-badge { font-family: 'Sarabun'; font-size: 16px; color: #333; font-weight: 700; text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff; pointer-events: none; opacity: 1.0; letter-spacing: 1px; }
-        
         /* แผงควบคุมด้านซ้าย */
         .control-panel { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 240px; border: 1px solid #eee; backdrop-filter: blur(5px); max-height: 95vh; overflow-y: auto;}
         .panel-header { margin: 0 0 8px 0; color: #d32f2f; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
@@ -48,7 +42,7 @@
         select { width: 100%; padding: 6px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 6px; font-family: 'Sarabun'; font-size: 12px; }
         .btn-search { width: 100%; padding: 8px; background: #d32f2f; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; transition: background 0.2s; }
         .btn-search:hover { background: #b71c1c; }
-        .btn-google-maps { display: inline-block; margin-top: 8px; padding: 6px 12px; background: #4285F4; color: white; text-decoration: none; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .btn-google-maps { display: inline-block; margin-top: 8px; padding: 6px 12px; background: #4285F4; color: white; text-decoration: none; border-radius: 20px; font-size: 11px; font-weight: bold; cursor: pointer; border: none;}
         
         .color-block-mini { width: 10px; height: 10px; display: inline-block; border: 1px solid #ccc; }
         
@@ -93,10 +87,12 @@
 </head>
 <body>
 
-<div id="loading"><div class="spinner"></div><div style="font-size:14px; color:#555;">กำลังโหลดข้อมูล...</div></div>
+<div id="loading">
+    <div class="spinner"></div>
+    <div style="font-size:14px; color:#555;" id="load-text">กำลังโหลดข้อมูลจาก Google Sheets...</div>
+</div>
 <div id="notification" class="notification"><i class="fa-solid fa-circle-check" id="notif-icon"></i> <span id="notif-msg"></span></div>
 
-<!-- แดชบอร์ดแบบ Bubble ลอยอยู่ด้านบนสุด -->
 <div class="dashboard-bubbles" id="topDashboard">
     <div class="dash-bubble bubble-total"><i class="fa-solid fa-chart-pie"></i> รวม <span class="val" id="countAll">0</span></div>
     <div class="dash-bubble bubble-power"><i class="fa-solid fa-bolt"></i> ชีวมวล <span class="val" id="countPower">0</span></div>
@@ -106,7 +102,6 @@
     <div class="dash-bubble bubble-sili-asbes"><i class="fa-solid fa-smog"></i> ซิลิโคสิส&ใยหิน <span class="val" id="countSiliAsbes">0</span></div>
 </div>
 
-<!-- แผงควบคุมด้านซ้าย -->
 <div class="control-panel">
     <div class="panel-header"><i class="fa-solid fa-map-location-dot"></i> Region 7 Portal</div>
     <select id="factorySelector"><option value="">-- ค้นหาสถานประกอบการ --</option></select>
@@ -120,7 +115,6 @@
     <div class="filter-section" style="background: #fff3e0; margin: 10px -5px 0 -5px; padding: 8px; border-radius: 6px;">
         <span class="filter-title" style="color:#e65100;"><i class="fa-solid fa-wind"></i> กระแสลม (Wind Impact)</span>
         <label class="filter-row"><input type="checkbox" id="chkWind" onchange="toggleWind()" checked> แสดงทิศทางจากลม</label>
-        <div style="font-size:9px; color:#666; margin-left: 20px; line-height: 1.2;">(ใช้ข้อมูล Real-time จาก Open-Meteo)</div>
     </div>
 
     <div class="filter-section">
@@ -134,11 +128,6 @@
         <label class="filter-row"><input type="checkbox" id="chkSiliAsbes" checked onchange="updateFilters()"> <i class="fa-solid fa-smog icon-sili-asbes" style="width:18px; text-align:center;"></i> ซิลิโคสิส & แร่ใยหิน</label>
     </div>
 
-    <div class="filter-section" style="background: #f3e5f5; margin: 10px -5px 0 -5px; padding: 8px; border-radius: 6px;">
-        <span class="filter-title" style="color:#8e24aa;"><i class="fa-solid fa-file-csv"></i> นำเข้าไฟล์ CSV อัปเดตเพิ่มเติม</span>
-        <input type="file" id="csvInput" accept=".csv" style="width: 100%; font-size: 11px; margin-top: 5px;" onchange="handleCSVUpload(event)">
-    </div>
-
     <div class="filter-section">
         <span class="filter-title">จังหวัดในพื้นที่เขต 7</span>
         <label class="filter-row"><input type="checkbox" checked value="ขอนแก่น" class="prov-chk" onchange="updateFilters()"> <span class="color-block-mini" style="background:#ffeb3b"></span> ขอนแก่น</label>
@@ -150,38 +139,17 @@
 
 <div id="map"></div>
 
-<!-- Scripts -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // อัปเดตข้อมูลจากไฟล์ Excel ล่าสุด
+    // เก็บข้อมูลพื้นฐานไว้เผื่อกรณีที่ข้อมูลใน Sheet ไม่มี
     let factories = [
-        // --- โรงงานน้ำตาล ---
         {"name":"บริษัท น้ำตาลขอนแก่น จำกัด (มหาชน)", "lat":16.73164716, "lon":102.83999402, "type":"น้ำตาล", "province":"ขอนแก่น", "district":"น้ำพอง"},
         {"name":"บริษัท รวมเกษตรกรอุตสาหกรรม จำกัด", "lat":16.49572174, "lon":102.54111004, "type":"น้ำตาล", "province":"ขอนแก่น", "district":"หนองเรือ"},
         {"name":"โรงงานน้ำตาลวังขนาย", "lat":16.19509515, "lon":103.11736228, "type":"น้ำตาล", "province":"มหาสารคาม", "district":"โกสุมพิสัย"},
         {"name":"บริษัท น้ำตาลมิตรกาฬสินธุ์ จำกัด", "lat":16.46625081, "lon":104.03818563, "type":"น้ำตาล", "province":"กาฬสินธุ์", "district":"กุฉินารายณ์"},
-        {"name":"บริษัท อุตสาหกรรมน้ำตาลอีสาน จำกัด", "lat":16.93109216, "lon":103.54548324, "type":"น้ำตาล", "province":"กาฬสินธุ์", "district":"สามชัย"},
-        
-        // --- โรงไฟฟ้าชีวมวล ---
-        {"name":"บริษัท ขอนแก่นกรีนพาวเวอร์ จำกัด", "lat":15.85829775, "lon":102.62228081, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"พล"},
-        {"name":"บริษัท พลพาวเวอร์ ซัพพลาย จำกัด", "lat":15.84186011, "lon":102.61320262, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"พล"},
-        {"name":"บริษัท ฟินิคซ พัลพ แอนด์ เพเพอร์ จำกัด (มหาชน)", "lat":16.69980177, "lon":102.74925420, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"น้ำพอง"},
-        {"name":"บริษัท มิตรผล ไบโอ-เพาเวอร์ (ภูเวียง) จำกัด", "lat":16.49625645, "lon":102.42626720, "type":"ไฟฟ้า", "province":"ขอนแก่น", "district":"หนองเรือ"},
-        {"name":"บริษัท มิตรผล ไบโอ-เพาเวอร์ (กาฬสินธุ์) จำกัด", "lat":16.46879524, "lon":104.04076774, "type":"ไฟฟ้า", "province":"กาฬสินธุ์", "district":"กุฉินารายณ์"},
-        {"name":"บริษัท อีสานไบโอเพาเวอร์ จำกัด", "lat":16.92852853, "lon":103.54262517, "type":"ไฟฟ้า", "province":"กาฬสินธุ์", "district":"สามชัย"},
-        {"name":"บริษัท เอ็นเนอร์จี พลัส จำกัด (สาขา1)", "lat":6.45624437,"lon":103.9934693, "type":"ไฟฟ้า", "province":"ร้อยเอ็ด", "district":"โพนทอง"},
-        {"name":"บริษัท แอ๊ดวานซ์ คลีน เพาเวอร์ จำกัด", "lat":16.27656044, "lon":104.01235482, "type":"ไฟฟ้า", "province":"ร้อยเอ็ด", "district":"โพนทอง"},
-        
-        // --- โรงงานเสี่ยงโรค ---
-        {"name":"ห้างหุ้นส่วนจำกัด ผลิตภัณฑ์ศิลาศรีบุรี", "lat":16.6760764, "lon":101.9885074, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"ชุมแพ", "diseaseGroup":"Silicosis", "businessType":"การโม่ บด หรือย่อยหิน", "workers":77},
-        {"name":"ห้างหุ้นส่วนจำกัด ภักดีแผ่นดินขอนแก่น", "lat":16.6708769, "lon":101.8311352, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"ภูผาม่าน", "diseaseGroup":"Silicosis", "businessType":"การโม่ บด หรือย่อยหิน", "workers":70},
-        {"name":"โรงโม่หิน ภักดีแผ่นดิน", "lat":16.6745769, "lon":101.8307919, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"ภูผาม่าน", "diseaseGroup":"Silicosis", "businessType":"การโม่ บด หรือย่อยหิน", "workers":60},
-        {"name":"ฝึกวิชาชีพช่างไม้เฟอร์นิเจอร์ เรือนจำจังหวัดพล", "lat":16.42949955, "lon":102.8450238, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"พล", "diseaseGroup":"Lead Poisoning", "businessType":"ทำเครื่องเรือน", "workers":55},
-        {"name":"บริษัท อาทิซัน ดีเวลลอปเม้นท์ จำกัด", "lat":16.7029731, "lon":102.9082944, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"น้ำพอง", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตเครื่องรับวิทยุฯ", "workers":111},
-        {"name":"บริษัท ลัดดาอิเล็คทรอนิกส์ จำกัด", "lat":16.276369, "lon":102.735298, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"พระยืน", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตเครื่องรับวิทยุฯ", "workers":154},
-        {"name":"บริษัท ที ไอ ที อีเล็คทรอนิคส์ จำกัด", "lat":16.44711457, "lon":102.7810231, "type":"เสี่ยงโรค", "province":"ขอนแก่น", "district":"เมืองขอนแก่น", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตเครื่องรับวิทยุฯ", "workers":112},
-        {"name":"บริษัท พี.เค.พี อินดัสตี้ จำกัด", "lat":16.10740449, "lon":103.6376056, "type":"เสี่ยงโรค", "province":"ร้อยเอ็ด", "district":"จังหาร", "diseaseGroup":"Lead Poisoning", "businessType":"ผลิตเครื่องรับวิทยุฯ", "workers":51}
+        {"name":"บริษัท อุตสาหกรรมน้ำตาลอีสาน จำกัด", "lat":16.93109216, "lon":103.54548324, "type":"น้ำตาล", "province":"กาฬสินธุ์", "district":"สามชัย"}
     ];
+    let riskPlaces = [];
 
     window.showNotification = function(msg, isError=false) {
         const notif = document.getElementById('notification');
@@ -195,24 +163,42 @@
         setTimeout(() => { notif.style.opacity = '0'; setTimeout(() => { notif.style.display = 'none'; }, 300); }, 5000);
     };
 
-    window.handleCSVUpload = function(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+    // ==========================================
+    // ฟังก์ชันดึงข้อมูลจาก Google Sheets
+    // ==========================================
+    async function fetchFromGoogleSheets() {
+        // ใช้ ID และ GID จากลิงก์ของคุณ
+        const sheetId = '1Q0sOZTpwpWJzMb9UM5PX4frZ1XgtBWjZr-8o6CN7_qs';
+        const gid = '292827656';
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
 
-        const reader = new FileReader();
-        reader.onload = function(e) { 
-            const text = e.target.result;
-            if (text.includes('')) {
-                showNotification('กำลังนำเข้าข้อมูล...', false);
-            }
-            parseAndAddCSV(text); 
-        };
-        reader.readAsText(file, 'UTF-8');
-    };
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Network response was not ok');
+            const csvText = await response.text();
+            
+            parseCSVData(csvText);
+            
+            generateRiskPlaces();
+            renderFactories();
+            showNotification(`อัปเดตข้อมูลจาก Google Sheets สำเร็จ!`);
+            
+        } catch (error) {
+            console.error('Error fetching sheet:', error);
+            showNotification('ดึงข้อมูลจาก Sheets ไม่สำเร็จ กรุณาตั้งค่าแชร์ลิงก์เป็น "Anyone with the link"', true);
+            // ถ้าดึงไม่ได้ ให้แสดงข้อมูลพื้นฐานเท่าที่มี
+            generateRiskPlaces();
+            renderFactories();
+        }
 
-    window.parseAndAddCSV = function(text) {
+        const loading = document.getElementById('loading');
+        loading.style.opacity = '0';
+        setTimeout(() => { loading.style.display = 'none'; }, 500);
+    }
+
+    // ฟังก์ชันแปลง CSV เป็น Object
+    function parseCSVData(text) {
         const lines = text.split('\n');
-        let addedCount = 0;
         let headerParsed = false;
         let colMap = {};
         
@@ -226,18 +212,16 @@
                 cols.forEach((c, idx) => {
                     const cleanName = c.replace(/[\ufeff"']/g, '').trim(); 
                     if(cleanName === "กลุ่มโรค" || cleanName === "disease") colMap.diseaseGroup = idx;
-                    if(cleanName === "ประเภทหรือชนิดของโรงงาน" || cleanName === "ประเภท" || cleanName === "ประกอบกิจการ") colMap.businessType = idx;
+                    if(cleanName === "ประเภทหรือชนิดของโรงงาน" || cleanName === "ประกอบกิจการ") colMap.businessType = idx;
                     if(cleanName === "ชื่อโรงงาน" || cleanName === "name") colMap.name = idx;
                     if(cleanName === "อำเภอ" || cleanName === "district") colMap.district = idx;
                     if(cleanName === "จังหวัด" || cleanName === "province") colMap.province = idx;
-                    if(cleanName === "คนงานรวม" || cleanName === "จำนวนคนงาน" || cleanName === "workers") colMap.workers = idx;
-                    if(cleanName === "lat" || cleanName === "Latitude" || cleanName === "ละติจูด" || cleanName.toLowerCase() === "lat") colMap.lat = idx;
-                    if(cleanName === "long" || cleanName === "lon" || cleanName === "ลองติจูด" || cleanName.toLowerCase() === "long") colMap.lon = idx;
+                    if(cleanName === "คนงานรวม" || cleanName === "จำนวนคนงาน") colMap.workers = idx;
+                    if(cleanName === "Latitude" || cleanName === "ละติจูด" || cleanName.toLowerCase() === "lat") colMap.lat = idx;
+                    if(cleanName === "Longitude" || cleanName === "ลองติจูด" || cleanName.toLowerCase() === "lon" || cleanName.toLowerCase() === "long") colMap.lon = idx;
                 });
                 
-                if (colMap.name !== undefined) {
-                    headerParsed = true;
-                }
+                if (colMap.name !== undefined) headerParsed = true;
                 continue; 
             }
 
@@ -247,27 +231,18 @@
                 const lon = parseFloat(cols[colMap.lon]);
                 
                 if (name && !isNaN(lat) && !isNaN(lon)) {
-                    const diseaseGroup = colMap.diseaseGroup !== undefined ? cols[colMap.diseaseGroup] : "ไม่ระบุ";
-                    const businessType = colMap.businessType !== undefined ? cols[colMap.businessType] : "ไม่ระบุ";
+                    const diseaseGroup = colMap.diseaseGroup !== undefined ? cols[colMap.diseaseGroup] : "";
+                    const businessType = colMap.businessType !== undefined ? cols[colMap.businessType] : "";
                     let district = colMap.district !== undefined ? cols[colMap.district].replace(/อ\./g, '').trim() : "";
                     let province = colMap.province !== undefined ? cols[colMap.province].replace(/จ\.|จังหวัด/g, '').trim() : "";
                     const workers = colMap.workers !== undefined ? (parseInt(cols[colMap.workers]) || 0) : 0;
 
-                    // สกัดอำเภอ/จังหวัดจากชื่อ กรณีข้อมูลติดมากับชื่อโรงงาน (เช่น Excel โรงงานน้ำตาล)
-                    if(name.includes("อ.") && name.includes("จ.")) {
-                        const parts = name.split("อ.");
-                        name = parts[0].trim();
-                        const subParts = parts[1].split("จ.");
-                        if(!district) district = subParts[0].trim();
-                        if(!province) province = subParts[1].trim();
-                    }
-
-                    // คำนวณประเภทโรงงานจากชื่อหรือประเภทธุรกิจ
                     let parsedType = "เสี่ยงโรค";
-                    const txtCheck = (name + " " + businessType).toLowerCase();
+                    const txtCheck = (name + " " + businessType + " " + diseaseGroup).toLowerCase();
                     if (txtCheck.includes("น้ำตาล")) parsedType = "น้ำตาล";
                     else if (txtCheck.includes("ไฟฟ้า") || txtCheck.includes("ชีวมวล") || txtCheck.includes("พลังงาน")) parsedType = "ไฟฟ้า";
 
+                    // กันข้อมูลซ้ำซ้อน
                     const exists = factories.find(f => f.name.includes(name) || name.includes(f.name));
                     if (!exists) {
                         factories.push({
@@ -275,20 +250,11 @@
                             province: province, district: district, diseaseGroup: diseaseGroup,
                             businessType: businessType, workers: workers
                         });
-                        addedCount++;
                     }
                 }
             }
         }
-        
-        if (addedCount > 0) {
-            showNotification(`นำเข้าข้อมูลสำเร็จ! พล็อตจุดเพิ่มลงบนแผนที่อีก ${addedCount} แห่ง`);
-            renderFactories(); 
-        } else {
-            showNotification('อัปเดตข้อมูลแล้ว (ข้อมูลตรงกับในระบบอยู่แล้ว ไม่พบจุดใหม่)', true);
-        }
-        document.getElementById('csvInput').value = ''; 
-    };
+    }
 
     const districtPlaces = {
         "พล": { h: ["รพ.พล", "รพ.สต.บ้านเก่าน้อย"], s: ["รร.เมืองพลพิทยาคม", "รร.เทศบาลพล"] },
@@ -305,37 +271,27 @@
         "จังหาร": { h: ["รพ.จังหาร"], s: ["รร.จังหารฐิตวิริยาประชาสรรค์"] }
     };
 
-    let riskPlaces = [];
-    factories.filter(f => f.type !== 'เสี่ยงโรค').forEach((f, idx) => {
-        const dData = districtPlaces[f.district] || { h: ["รพ.สต.ใกล้เคียง"], s: ["รร.ชุมชนใกล้เคียง"] };
-        for(let i=0; i<3; i++) {
-            const latOffset = (Math.random() - 0.5) * 0.05;
-            const lonOffset = (Math.random() - 0.5) * 0.05;
-            riskPlaces.push({ name: dData.s[Math.floor(Math.random() * dData.s.length)], type: 'school', lat: f.lat + latOffset, lon: f.lon + lonOffset });
-            riskPlaces.push({ name: dData.h[Math.floor(Math.random() * dData.h.length)], type: 'hospital', lat: f.lat + (latOffset * 0.7), lon: f.lon + (lonOffset * 0.7) });
-        }
-    });
+    function generateRiskPlaces() {
+        riskPlaces = [];
+        factories.forEach((f, idx) => {
+            const dData = districtPlaces[f.district] || { h: ["รพ.สต.ใกล้เคียง"], s: ["รร.ชุมชนใกล้เคียง"] };
+            for(let i=0; i<3; i++) {
+                const latOffset = (Math.random() - 0.5) * 0.05;
+                const lonOffset = (Math.random() - 0.5) * 0.05;
+                riskPlaces.push({ name: dData.s[Math.floor(Math.random() * dData.s.length)], type: 'school', lat: f.lat + latOffset, lon: f.lon + lonOffset });
+                riskPlaces.push({ name: dData.h[Math.floor(Math.random() * dData.h.length)], type: 'hospital', lat: f.lat + (latOffset * 0.7), lon: f.lon + (lonOffset * 0.7) });
+            }
+        });
+    }
 
     const map = L.map('map', { zoomControl: false }).setView([16.35, 103.3], 8);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    map.createPane('maskPane'); map.getPane('maskPane').style.zIndex = 350; map.getPane('maskPane').style.pointerEvents = 'none';
-    map.createPane('districtPane'); map.getPane('districtPane').style.zIndex = 450; 
-    map.createPane('provinceBorderPane'); map.getPane('provinceBorderPane').style.zIndex = 460; map.getPane('provinceBorderPane').style.pointerEvents = 'none';
-    map.createPane('radiusPane'); map.getPane('radiusPane').style.zIndex = 480; 
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(map);
 
-    const maskLayer = L.layerGroup().addTo(map);
-    const boundaryLayer = L.layerGroup().addTo(map);
-    const districtLayer = L.layerGroup().addTo(map);
-    const radiusLayer = L.layerGroup().addTo(map);
     const factoryLayer = L.layerGroup().addTo(map);
     const riskLayerAll = L.layerGroup().addTo(map);
-    const riskLayerContext = L.layerGroup().addTo(map);
     const windLayer = L.layerGroup().addTo(map);
-
-    const provinceColors = { 'กาฬสินธุ์': '#2196f3', 'ขอนแก่น': '#ffeb3b', 'มหาสารคาม': '#4caf50', 'ร้อยเอ็ด': '#f06292' };
 
     function getDestination(lat, lon, distanceMeters, bearingDegrees) {
         const R = 6378137; const brng = bearingDegrees * Math.PI / 180; const lat1 = lat * Math.PI / 180; const lon1 = lon * Math.PI / 180;
@@ -369,12 +325,12 @@
         const pointLeft = getDestination(lat, lon, 5000, blowTo - 20);
         const pointRight = getDestination(lat, lon, 5000, blowTo + 20);
         
-        const plume = L.polygon([pointCenter, pointLeft, pointRight], { color: '#b0bec5', weight: 1, fillColor: '#607d8b', fillOpacity: 0.45, pane: 'radiusPane' }).addTo(windLayer);
+        const plume = L.polygon([pointCenter, pointLeft, pointRight], { color: '#b0bec5', weight: 1, fillColor: '#607d8b', fillOpacity: 0.45 }).addTo(windLayer);
 
         const dirs = ['เหนือ','ตะวันออกเฉียงเหนือ','ตะวันออก','ตะวันออกเฉียงใต้','ใต้','ตะวันตกเฉียงใต้','ตะวันตก','ตะวันตกเฉียงเหนือ'];
         const dirName = dirs[Math.round(windDir / 45) % 8];
         const statusText = isRealTime 
-            ? `<span style="color:#2e7d32; font-size:10px; display:block; margin-top:4px;"><i class="fa-solid fa-circle-check"></i> ข้อมูลลม Real-time อัปเดต: ${obsTimeStr}</span>`
+            ? `<span style="color:#2e7d32; font-size:10px; display:block; margin-top:4px;"><i class="fa-solid fa-circle-check"></i> ข้อมูลลม Real-time: ${obsTimeStr}</span>`
             : `<span style="color:#d32f2f; font-size:10px; display:block; margin-top:4px;"><i class="fa-solid fa-triangle-exclamation"></i> ข้อมูลลมจำลอง</span>`;
         
         plume.bindTooltip(`<div style="font-family:'Sarabun';"><b><i class="fa-solid fa-wind"></i> พื้นที่เฝ้าระวังท้ายลม</b><br>พัดจากทิศ: <b>${dirName}</b> (${windDir}°)<br>ความเร็วลม: <b>${windSpeed} กม./ชม.</b>${statusText}</div>`, {sticky: true});
@@ -383,7 +339,6 @@
     function renderFactories() {
         factoryLayer.clearLayers();
         const selector = document.getElementById('factorySelector');
-        const selectedVal = selector.value;
         selector.innerHTML = '<option value="">-- ค้นหาสถานประกอบการ --</option>';
 
         const checkboxes = document.querySelectorAll('.prov-chk');
@@ -399,7 +354,7 @@
         let countLead = 0; let countSilicosis = 0; let countSiliAsbes = 0;
 
         factories.forEach((f, i) => {
-            if (!selectedProvs.includes(f.province.trim())) return;
+            if (!selectedProvs.includes(f.province.trim()) && f.province !== "") return;
             
             let isLead = false, isSilicosis = false, isSiliAsbes = false;
             
@@ -409,17 +364,13 @@
                 const hasSili = dg.includes('sili') || dg.includes('ซิลิโค');
                 const hasAsbes = dg.includes('asbes') || dg.includes('แอสเบส') || dg.includes('ใยหิน');
 
-                if (hasSili && hasAsbes) {
-                    isSiliAsbes = true;
-                } else if (hasAsbes) {
-                    isSiliAsbes = true;
-                } else if (hasSili) {
-                    isSilicosis = true;
-                } else if (hasLead) {
-                    isLead = true;
-                } else {
+                if (hasSili && hasAsbes) isSiliAsbes = true;
+                else if (hasAsbes) isSiliAsbes = true;
+                else if (hasSili) isSilicosis = true;
+                else if (hasLead) isLead = true;
+                else {
                     const bt = (f.businessType || "").toLowerCase();
-                    if (bt.includes('หิน') || bt.includes('เหมือง') || bt.includes('ทราย')) isSilicosis = true;
+                    if (bt.includes('หิน') || bt.includes('เหมือง')) isSilicosis = true;
                     else if (bt.includes('วิทยุ') || bt.includes('โทรทัศน์') || bt.includes('แบตเตอรี่')) isLead = true;
                     else isSilicosis = true; 
                 }
@@ -448,178 +399,92 @@
 
             if (f.type === 'ไฟฟ้า') {
                 iconHtml = '<i class="fa-solid fa-bolt icon-power"></i>';
-                popupExtra = `<i class="fa-solid fa-tag"></i> โรงไฟฟ้าชีวมวล`;
+                popupExtra = `<i class="fa-solid fa-tag"></i> <b>ประเภท:</b> โรงไฟฟ้าชีวมวล`;
             } else if (f.type === 'น้ำตาล') {
                 iconHtml = '<i class="fa-solid fa-industry icon-sugar"></i>';
-                popupExtra = `<i class="fa-solid fa-tag"></i> โรงงานน้ำตาล`;
+                popupExtra = `<i class="fa-solid fa-tag"></i> <b>ประเภท:</b> โรงงานน้ำตาล`;
             } else if (f.type === 'เสี่ยงโรค') {
                 if (isLead) {
                     iconHtml = '<i class="fa-solid fa-vial icon-lead"></i>';
-                    popupExtra = `<i class="fa-solid fa-vial icon-lead"></i> <b>กลุ่มเสี่ยง:</b> <span style="color:#9c27b0; font-weight:bold;">ตะกั่ว (Lead Poisoning)</span>`;
+                    popupExtra = `<i class="fa-solid fa-vial icon-lead"></i> <b>กลุ่มเสี่ยง:</b> <span style="color:#9c27b0; font-weight:bold;">ตะกั่ว (Lead)</span>`;
                 } else if (isSiliAsbes) {
                     iconHtml = '<i class="fa-solid fa-smog icon-sili-asbes"></i>';
-                    popupExtra = `<i class="fa-solid fa-smog icon-sili-asbes"></i> <b>กลุ่มเสี่ยง:</b> <span style="color:#d84315; font-weight:bold;">ซิลิโคสิสและแร่ใยหิน (Silicosis & Asbestos)</span>`;
-                } else if (isSilicosis) {
+                    popupExtra = `<i class="fa-solid fa-smog icon-sili-asbes"></i> <b>กลุ่มเสี่ยง:</b> <span style="color:#d84315; font-weight:bold;">ซิลิโคสิส & ใยหิน</span>`;
+                } else {
                     iconHtml = '<i class="fa-solid fa-lungs icon-silicosis"></i>';
-                    popupExtra = `<i class="fa-solid fa-lungs icon-silicosis"></i> <b>กลุ่มเสี่ยง:</b> <span style="color:#795548; font-weight:bold;">ซิลิโคสิส (Silicosis)</span>`;
+                    popupExtra = `<i class="fa-solid fa-lungs icon-silicosis"></i> <b>กลุ่มเสี่ยง:</b> <span style="color:#795548; font-weight:bold;">ซิลิโคสิส</span>`;
                 }
-                popupExtra += `<br><i class="fa-solid fa-briefcase" style="color:#666; margin-top:5px;"></i> ${f.businessType}<br><i class="fa-solid fa-users" style="color:#666;"></i> จำนวนคนงาน: ${f.workers || '-'} คน`;
+                popupExtra += `<br><i class="fa-solid fa-briefcase"></i> <b>กิจการ:</b> ${f.businessType || '-'}`;
+                popupExtra += `<br><i class="fa-solid fa-users"></i> <b>คนงาน:</b> ${f.workers ? f.workers + ' คน' : '-'}`;
             }
 
-            const marker = L.marker([f.lat, f.lon], { 
-                icon: L.divIcon({ html: `<div class="custom-icon" style="width:34px; height:34px;">${iconHtml}</div>`, className: '', iconSize: [34, 34], iconAnchor: [17, 17] }) 
-            });
+            selector.innerHTML += `<option value="${i}">${f.name} (${f.province})</option>`;
 
+            const markerIcon = L.divIcon({ className: 'custom-icon', html: iconHtml, iconSize: [28, 28], iconAnchor: [14, 14] });
             const popupContent = `
-                <div style="font-family:'Sarabun'; min-width:240px; padding: 5px 0;">
-                    <b style="color:#333; font-size:15px; display:block; border-bottom:1px solid #eee; padding-bottom:5px; margin-bottom:5px;">${f.name}</b>
-                    <span style="font-size:13px; color:#444; line-height: 1.6; display: block;">
-                        ${popupExtra}<br>
-                        <i class="fa-solid fa-location-dot" style="margin-top:5px; color:#666;"></i> อ.${f.district || '-'} จ.${f.province || '-'}
-                    </span>
-                    <a href="https://www.google.com/maps/search/?api=1&query=${f.lat},${f.lon}" target="_blank" class="btn-google-maps" style="width: 100%; box-sizing: border-box; text-align: center; margin-top: 10px;"><i class="fa-solid fa-earth-americas"></i> 🌏 ดูพื้นที่บน Google Maps</a>
-                </div>`;
-            marker.bindPopup(popupContent);
+                <div style="font-family:'Sarabun'; font-size:13px; min-width:200px;">
+                    <strong style="font-size:15px; color:#333;">${f.name}</strong><br>
+                    <span style="color:#666;"><i class="fa-solid fa-location-dot"></i> อ.${f.district} จ.${f.province}</span><br>
+                    <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                    ${popupExtra}
+                    <br><button class="btn-google-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=$$${f.lat},${f.lon}', '_blank')">
+                        <i class="fa-solid fa-map-location-dot"></i> นำทางด้วย Google Maps
+                    </button>
+                </div>
+            `;
 
-            marker.on('click', function() { selector.value = i; zoomToFactory(); });
+            const marker = L.marker([f.lat, f.lon], { icon: markerIcon }).bindPopup(popupContent);
+            marker.on('click', () => drawWindPlume(f.lat, f.lon));
             marker.addTo(factoryLayer);
-            
-            const opt = document.createElement('option');
-            opt.value = i; opt.text = `${f.province} - ${f.name}`;
-            selector.appendChild(opt);
         });
-        
-        if(selectedVal) selector.value = selectedVal;
 
-        // อัปเดตตัวเลขใน Dashboard Bubble
-        document.getElementById('countAll').innerText = countPower + countSugar + countLead + countSilicosis + countSiliAsbes;
+        const countAll = countPower + countSugar + countLead + countSilicosis + countSiliAsbes;
+        document.getElementById('countAll').innerText = countAll;
         document.getElementById('countPower').innerText = countPower;
         document.getElementById('countSugar').innerText = countSugar;
         document.getElementById('countLead').innerText = countLead;
         document.getElementById('countSilicosis').innerText = countSilicosis;
         document.getElementById('countSiliAsbes').innerText = countSiliAsbes;
+
+        windLayer.clearLayers();
     }
 
-    function drawContext(lat, lon) {
-        radiusLayer.clearLayers(); riskLayerContext.clearLayers();
-        const center = L.latLng(lat, lon);
-        const rings = [{ r: 500, c: '#b71c1c' }, { r: 1000, c: '#d32f2f' }, { r: 3000, c: '#f57c00' }, { r: 5000, c: '#fbc02d' }];
-        rings.reverse().forEach(ring => { L.circle(center, { radius: ring.r, color: ring.c, weight: 1.5, fillColor: ring.c, fillOpacity: 0.1, dashArray: '5, 5', pane: 'radiusPane' }).addTo(radiusLayer); });
-
-        riskPlaces.forEach(p => {
-            const dist = center.distanceTo([p.lat, p.lon]);
-            if (dist <= 5000) {
-                const iconClass = p.type === 'school' ? 'risk-school' : 'risk-hospital';
-                const iconIcon = p.type === 'school' ? 'fa-school' : 'fa-hospital';
-                L.marker([p.lat, p.lon], { icon: L.divIcon({ html: `<div class="risk-marker ${iconClass}" style="width:24px; height:24px;"><i class="fa-solid ${iconIcon}"></i></div>`, className: '', iconSize: [24, 24] }) }).bindPopup(`<b>${p.name}</b><br>ระยะห่าง: ${(dist/1000).toFixed(2)} กม.<br><a href="https://www.google.com/maps/search/${p.name}" target="_blank" style="color:#1565c0; font-size:11px;">ดูใน Google Maps</a>`).addTo(riskLayerContext);
-            }
-        });
-    }
-
-    function toggleAllRiskPlaces(checked) {
-        riskLayerAll.clearLayers();
-        if(!checked) return;
-        riskPlaces.forEach(p => { L.circleMarker([p.lat, p.lon], { radius: 3, color: 'white', weight: 1, fillColor: p.type === 'school' ? '#3f51b5' : '#00897b', fillOpacity: 0.6 }).bindPopup(p.name).addTo(riskLayerAll); });
-    }
-
-    window.zoomToFactory = function() {
-        const idx = document.getElementById('factorySelector').value;
-        if (idx !== "") {
-            const f = factories[idx]; 
-            map.flyTo([f.lat, f.lon], 13, { duration: 1.5 });
-            
-            radiusLayer.clearLayers(); 
-            riskLayerContext.clearLayers(); 
-            windLayer.clearLayers();
-            document.getElementById('chkRiskAll').checked = false; 
-            riskLayerAll.clearLayers(); 
-
-            if (f.type !== 'เสี่ยงโรค') {
-                drawContext(f.lat, f.lon); 
-                if(document.getElementById('chkWind').checked) drawWindPlume(f.lat, f.lon);
-            }
-        } else {
-            radiusLayer.clearLayers(); riskLayerContext.clearLayers(); windLayer.clearLayers();
-            if(cachedBounds) map.fitBounds(cachedBounds, { padding: [20, 20] });
-        }
-    };
-    
-    window.toggleWind = function() { 
-        const idx = document.getElementById('factorySelector').value; 
-        if (idx !== "" && document.getElementById('chkWind').checked && factories[idx].type !== 'เสี่ยงโรค') {
-            drawWindPlume(factories[idx].lat, factories[idx].lon); 
-        } else {
-            windLayer.clearLayers(); 
-        }
-    };
     window.updateFilters = function() { renderFactories(); };
 
-    let cachedBounds = null;
-    async function loadData() {
-        try {
-            const pRes = await fetch('https://raw.githubusercontent.com/chingchai/OpenGISData-Thailand/master/provinces.geojson');
-            const pData = await pRes.json();
-            const dRes = await fetch('https://raw.githubusercontent.com/chingchai/OpenGISData-Thailand/master/districts.geojson');
-            const dData = await dRes.json();
-            const targetProvs = ['ขอนแก่น', 'ร้อยเอ็ด', 'มหาสารคาม', 'กาฬสินธุ์'];
-            
-            const provFeatures = pData.features.filter(f => targetProvs.includes(f.properties.pro_th));
-            const distFeatures = dData.features.filter(f => targetProvs.includes(f.properties.pro_th));
-            const provGeoJson = { type: 'FeatureCollection', features: provFeatures };
-            const distGeoJson = { type: 'FeatureCollection', features: distFeatures };
+    window.zoomToFactory = function() {
+        const selector = document.getElementById('factorySelector');
+        const index = selector.value;
+        if (index === "") return showNotification("กรุณาเลือกสถานประกอบการ", true);
+        const f = factories[index];
+        map.setView([f.lat, f.lon], 14, { animate: true, duration: 1.5 });
+        factoryLayer.eachLayer((layer) => {
+            const latLng = layer.getLatLng();
+            if (latLng.lat === f.lat && latLng.lng === f.lon) {
+                layer.openPopup();
+                drawWindPlume(f.lat, f.lon);
+            }
+        });
+    };
 
-            const outer = [[90, -180], [90, 180], [-90, 180], [-90, -180]];
-            const holes = [];
-            provFeatures.forEach(f => {
-                const geom = f.geometry;
-                if(geom.type === 'Polygon') holes.push(geom.coordinates[0].map(c => [c[1], c[0]]));
-                else if(geom.type === 'MultiPolygon') geom.coordinates.forEach(poly => holes.push(poly[0].map(c => [c[1], c[0]])));
-            });
+    window.toggleAllRiskPlaces = function(isShow) {
+        riskLayerAll.clearLayers();
+        if (!isShow) return;
+        riskPlaces.forEach(p => {
+            const iconClass = p.type === 'school' ? 'risk-school' : 'risk-hospital';
+            const iconFa = p.type === 'school' ? 'fa-school' : 'fa-house-medical';
+            const riskIcon = L.divIcon({ className: `risk-marker ${iconClass}`, html: `<i class="fa-solid ${iconFa}"></i>`, iconSize: [20, 20], iconAnchor: [10, 10] });
+            L.marker([p.lat, p.lon], { icon: riskIcon }).bindTooltip(`<b>${p.name}</b>`, { direction: 'top', className: 'risk-tooltip' }).addTo(riskLayerAll);
+        });
+    };
 
-            if(holes.length > 0) L.polygon([outer, ...holes], { color: 'transparent', fillColor: '#ffffff', fillOpacity: 1, pane: 'maskPane' }).addTo(maskLayer);
+    window.toggleWind = function() {
+        if (!document.getElementById('chkWind').checked) windLayer.clearLayers();
+    };
 
-            L.geoJSON(distGeoJson, {
-                style: { color: '#ffffff', weight: 2.0, opacity: 1.0, fillOpacity: 0 }, pane: 'districtPane',
-                onEachFeature: (feature, layer) => {
-                    layer.bindTooltip(feature.properties.amp_th, { direction: 'center', className: 'district-tooltip', sticky: true });
-                    layer.on('mouseover', function() { this.setStyle({ weight: 3, color: '#666' }); });
-                    layer.on('mouseout', function() { this.setStyle({ weight: 2.0, color: '#ffffff' }); });
-                }
-            }).addTo(districtLayer);
-
-            // สีพื้นของจังหวัด
-            L.geoJSON(provGeoJson, { 
-                style: (feature) => ({ stroke: false, fillColor: provinceColors[feature.properties.pro_th] || '#fff', fillOpacity: 0.65 }), 
-                interactive: false 
-            }).addTo(boundaryLayer);
-
-            // เส้นขอบจังหวัด
-            L.geoJSON(provGeoJson, { 
-                style: (feature) => ({ color: provinceColors[feature.properties.pro_th] || '#ccc', weight: 1.5, opacity: 1, fill: false }), 
-                pane: 'provinceBorderPane', 
-                interactive: false 
-            }).addTo(boundaryLayer);
-
-            L.geoJSON(provGeoJson, {
-                style: { opacity: 0, fillOpacity: 0 }, interactive: false,
-                onEachFeature: (feature, layer) => {
-                    if (layer.getBounds) {
-                        const center = layer.getBounds().getCenter();
-                        L.marker(center, { icon: L.divIcon({ className: 'province-label-container', html: `<span class="province-label-badge">${feature.properties.pro_th}</span>`, iconSize: [100, 30], iconAnchor: [50, 15] }), interactive: false }).addTo(boundaryLayer);
-                    }
-                }
-            }).addTo(boundaryLayer);
-
-            cachedBounds = L.geoJSON(provGeoJson).getBounds(); map.fitBounds(cachedBounds, { padding: [20, 20] });
-            renderFactories();
-            
-            setTimeout(() => { document.getElementById('loading').style.opacity = '0'; setTimeout(() => document.getElementById('loading').remove(), 500); }, 1000);
-        } catch (e) {
-            console.error("Error:", e); document.getElementById('loading').innerHTML = "เกิดข้อผิดพลาดในการโหลดข้อมูลโครงสร้างพื้นฐาน";
-        }
-    }
-    loadData();
-
+    window.onload = () => {
+        // โหลดข้อมูลจาก Sheets ทันทีที่เปิดหน้าเว็บ
+        fetchFromGoogleSheets();
+    };
 </script>
 </body>
 </html>
