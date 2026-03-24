@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>Region 7 Health Risk Map</title>
+    <title>Region 7 Risk Map (Live Sync)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
@@ -10,130 +10,47 @@
     <style>
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Sarabun', sans-serif; background: #ffffff; overflow: hidden; }
         #map { height: 100vh; width: 100%; background: #fff; }
-        .leaflet-container:focus, .leaflet-interactive:focus, a.leaflet-active { outline: none !important; }
-        path.leaflet-interactive:focus { outline: none !important; }
-        
-        /* สไตล์สำหรับไอคอนสถานประกอบการบนแผนที่ */
-        .custom-icon { 
-            display: flex; justify-content: center; align-items: center; 
-            border-radius: 50%; border: 2px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.3); 
-            background: white; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-        }
-        .custom-icon:hover { transform: scale(1.3); z-index: 1000 !important; }
-        
-        /* สีของไอคอนแต่ละประเภท */
-        .icon-power { color: #1565c0; font-size: 16px; }      /* ไฟฟ้าชีวมวล - น้ำเงิน */
-        .icon-sugar { color: #f57c00; font-size: 16px; }      /* น้ำตาล - ส้ม */
-        .icon-lead { color: #9c27b0; font-size: 16px; }       /* ตะกั่ว - ม่วง */
-        .icon-silicosis { color: #795548; font-size: 16px; }  /* ซิลิโคสิสเพียวๆ - น้ำตาล */
-        .icon-sili-asbes { color: #d84315; font-size: 16px; } /* ผสม ซิลิโคสิส & แอสเบสตอส - ส้มแดง */
-
-        /* ไอคอนจุดเสี่ยง (โรงเรียน, รพ.) */
-        .risk-marker { display: flex; justify-content: center; align-items: center; border-radius: 50%; border: 1px solid #fff; color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); font-size: 10px; }
-        .risk-school { background: #3f51b5; } 
-        .risk-hospital { background: #00897b; }
-        
-        /* แผงควบคุมด้านซ้าย */
-        .control-panel { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 240px; border: 1px solid #eee; backdrop-filter: blur(5px); max-height: 95vh; overflow-y: auto;}
-        .panel-header { margin: 0 0 8px 0; color: #d32f2f; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
-        .filter-section { margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; }
-        .filter-title { font-size: 11px; font-weight: 700; color: #666; display: block; margin-bottom: 4px; }
-        .filter-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 5px; cursor: pointer; color: #444; }
-        select { width: 100%; padding: 6px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 6px; font-family: 'Sarabun'; font-size: 12px; }
-        .btn-search { width: 100%; padding: 8px; background: #d32f2f; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; transition: background 0.2s; }
-        .btn-search:hover { background: #b71c1c; }
-        .btn-google-maps { display: inline-block; margin-top: 8px; padding: 6px 12px; background: #4285F4; color: white; text-decoration: none; border-radius: 20px; font-size: 11px; font-weight: bold; cursor: pointer; border: none;}
-        
-        .color-block-mini { width: 10px; height: 10px; display: inline-block; border: 1px solid #ccc; }
-        
-        /* แดชบอร์ดแบบ Bubble ลอยอยู่ด้านบน */
-        .dashboard-bubbles { 
-            position: absolute; top: 15px; left: 50%; transform: translateX(-50%); 
-            z-index: 1000; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; 
-            width: 100%; max-width: 950px; pointer-events: none;
-        }
-        .dash-bubble { 
-            background: rgba(255, 255, 255, 0.95); padding: 6px 14px; border-radius: 30px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-size: 12px; font-weight: 600; 
-            color: #444; display: flex; align-items: center; gap: 6px; border: 1.5px solid #ddd;
-            pointer-events: auto; backdrop-filter: blur(4px); transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .dash-bubble:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
-        .dash-bubble i { font-size: 14px; }
-        .dash-bubble .val { font-size: 15px; font-weight: 800; margin-left: 2px; }
-        
-        .bubble-total { border-color: #424242; color: #424242; }
-        .bubble-power { border-color: #1565c0; color: #1565c0; }
-        .bubble-sugar { border-color: #f57c00; color: #f57c00; }
-        .bubble-lead { border-color: #9c27b0; color: #9c27b0; }
-        .bubble-sili { border-color: #795548; color: #795548; }
-        .bubble-sili-asbes { border-color: #d84315; color: #d84315; }
-
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #d32f2f; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        .custom-icon { display: flex; justify-content: center; align-items: center; border-radius: 50%; border: 2px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.3); background: white; transition: all 0.3s; }
+        .icon-power { color: #1565c0; font-size: 16px; }      
+        .icon-sugar { color: #f57c00; font-size: 16px; }      
+        .icon-lead { color: #9c27b0; font-size: 16px; }       
+        .icon-silicosis { color: #795548; font-size: 16px; }  
+        .icon-sili-asbes { color: #d84315; font-size: 16px; } 
+        .control-panel { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 250px; max-height: 90vh; overflow-y: auto;}
+        .panel-header { margin-bottom: 10px; color: #d32f2f; font-weight: 800; font-size: 16px; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        .filter-section { margin-top: 10px; }
+        .filter-title { font-size: 12px; font-weight: 700; color: #666; display: block; margin-bottom: 5px; }
+        .filter-row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 6px; cursor: pointer; }
+        select { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ccc; font-family: 'Sarabun'; }
+        .btn-search { width: 100%; padding: 10px; background: #d32f2f; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .dashboard-bubbles { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; gap: 8px; pointer-events: none;}
+        .dash-bubble { background: white; padding: 5px 12px; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); font-size: 12px; font-weight: bold; border: 1px solid #ddd; pointer-events: auto; }
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #d32f2f; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .notification { position: fixed; top: 20px; right: 20px; background: #4caf50; color: white; padding: 15px 20px; border-radius: 8px; display: none; z-index: 9999; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-family: 'Sarabun', sans-serif; font-size: 14px; align-items: center; gap: 10px; transition: opacity 0.3s; opacity: 0; }
-
-        @media (max-width: 1100px) {
-            .dashboard-bubbles { top: auto; bottom: 20px; padding: 0 10px; }
-            .dash-bubble { padding: 4px 10px; font-size: 11px; }
-            .dash-bubble .val { font-size: 13px; }
-        }
-        
-        .control-panel::-webkit-scrollbar { width: 4px; }
-        .control-panel::-webkit-scrollbar-track { background: #f1f1f1; }
-        .control-panel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-<div id="loading">
-    <div class="spinner"></div>
-    <div style="font-size:14px; color:#555;" id="load-text">กำลังโหลดข้อมูลจาก Google Sheets...</div>
-</div>
-<div id="notification" class="notification"><i class="fa-solid fa-circle-check" id="notif-icon"></i> <span id="notif-msg"></span></div>
+<div id="loading"><div class="spinner"></div><p>กำลังเชื่อมต่อข้อมูล Google Sheets...</p></div>
 
-<div class="dashboard-bubbles" id="topDashboard">
-    <div class="dash-bubble bubble-total"><i class="fa-solid fa-chart-pie"></i> รวม <span class="val" id="countAll">0</span></div>
-    <div class="dash-bubble bubble-power"><i class="fa-solid fa-bolt"></i> ชีวมวล <span class="val" id="countPower">0</span></div>
-    <div class="dash-bubble bubble-sugar"><i class="fa-solid fa-industry"></i> น้ำตาล <span class="val" id="countSugar">0</span></div>
-    <div class="dash-bubble bubble-lead"><i class="fa-solid fa-vial"></i> ตะกั่ว <span class="val" id="countLead">0</span></div>
-    <div class="dash-bubble bubble-sili"><i class="fa-solid fa-lungs"></i> ซิลิโคสิส <span class="val" id="countSilicosis">0</span></div>
-    <div class="dash-bubble bubble-sili-asbes"><i class="fa-solid fa-smog"></i> ซิลิโคสิส&ใยหิน <span class="val" id="countSiliAsbes">0</span></div>
+<div class="dashboard-bubbles">
+    <div class="dash-bubble" style="border-color: #1565c0;">ชีวมวล: <span id="cPower">0</span></div>
+    <div class="dash-bubble" style="border-color: #f57c00;">น้ำตาล: <span id="cSugar">0</span></div>
+    <div class="dash-bubble" style="border-color: #9c27b0;">เสี่ยงโรค: <span id="cRisk">0</span></div>
 </div>
 
 <div class="control-panel">
-    <div class="panel-header"><i class="fa-solid fa-map-location-dot"></i> Region 7 Portal</div>
-    <select id="factorySelector"><option value="">-- ค้นหาสถานประกอบการ --</option></select>
-    <button class="btn-search" onclick="zoomToFactory()"><i class="fa-solid fa-magnifying-glass"></i> ค้นหาพิกัดพื้นที่</button>
-
-    <div class="filter-section" style="background: #e3f2fd; margin: 10px -5px 0 -5px; padding: 8px; border-radius: 6px;">
-        <span class="filter-title" style="color:#1565c0;"><i class="fa-solid fa-layer-group"></i> บริบทพื้นที่</span>
-        <label class="filter-row"><input type="checkbox" id="chkRiskAll" onchange="toggleAllRiskPlaces(this.checked)"> แสดงจุดเสี่ยงทั้งหมด (รร./รพ.)</label>
-    </div>
-
-    <div class="filter-section" style="background: #fff3e0; margin: 10px -5px 0 -5px; padding: 8px; border-radius: 6px;">
-        <span class="filter-title" style="color:#e65100;"><i class="fa-solid fa-wind"></i> กระแสลม (Wind Impact)</span>
-        <label class="filter-row"><input type="checkbox" id="chkWind" onchange="toggleWind()" checked> แสดงทิศทางจากลม</label>
-    </div>
+    <div class="panel-header">เขตสุขภาพที่ 7 Risk Map</div>
+    <select id="factorySelector"><option value="">-- เลือกโรงงาน --</option></select>
+    <button class="btn-search" onclick="zoomToFactory()">ไปที่พิกัด</button>
 
     <div class="filter-section">
-        <span class="filter-title">อุตสาหกรรมพลังงาน/เกษตร</span>
-        <label class="filter-row"><input type="checkbox" id="chkPower" checked onchange="updateFilters()"> <i class="fa-solid fa-bolt icon-power" style="width:18px; text-align:center;"></i> โรงไฟฟ้าชีวมวล</label>
-        <label class="filter-row"><input type="checkbox" id="chkSugar" checked onchange="updateFilters()"> <i class="fa-solid fa-industry icon-sugar" style="width:18px; text-align:center;"></i> โรงงานน้ำตาล</label>
-        
-        <span class="filter-title" style="margin-top: 10px; color:#d32f2f;"><i class="fa-solid fa-triangle-exclamation"></i> โรงงานเสี่ยง (3 กลุ่มโรค)</span>
-        <label class="filter-row"><input type="checkbox" id="chkLead" checked onchange="updateFilters()"> <i class="fa-solid fa-vial icon-lead" style="width:18px; text-align:center;"></i> ตะกั่ว (Lead)</label>
-        <label class="filter-row"><input type="checkbox" id="chkSilicosis" checked onchange="updateFilters()"> <i class="fa-solid fa-lungs icon-silicosis" style="width:18px; text-align:center;"></i> ซิลิโคสิส (Silicosis)</label>
-        <label class="filter-row"><input type="checkbox" id="chkSiliAsbes" checked onchange="updateFilters()"> <i class="fa-solid fa-smog icon-sili-asbes" style="width:18px; text-align:center;"></i> ซิลิโคสิส & แร่ใยหิน</label>
-    </div>
-
-    <div class="filter-section">
-        <span class="filter-title">จังหวัดในพื้นที่เขต 7</span>
-        <label class="filter-row"><input type="checkbox" checked value="ขอนแก่น" class="prov-chk" onchange="updateFilters()"> <span class="color-block-mini" style="background:#ffeb3b"></span> ขอนแก่น</label>
-        <label class="filter-row"><input type="checkbox" checked value="ร้อยเอ็ด" class="prov-chk" onchange="updateFilters()"> <span class="color-block-mini" style="background:#f06292"></span> ร้อยเอ็ด</label>
-        <label class="filter-row"><input type="checkbox" checked value="มหาสารคาม" class="prov-chk" onchange="updateFilters()"> <span class="color-block-mini" style="background:#4caf50"></span> มหาสารคาม</label>
-        <label class="filter-row"><input type="checkbox" checked value="กาฬสินธุ์" class="prov-chk" onchange="updateFilters()"> <span class="color-block-mini" style="background:#2196f3"></span> กาฬสินธุ์</label>
+        <span class="filter-title">ประเภทโรงงาน</span>
+        <label class="filter-row"><input type="checkbox" id="chkPower" checked onchange="renderMarkers()"> <i class="fa-solid fa-bolt icon-power"></i> โรงไฟฟ้าชีวมวล</label>
+        <label class="filter-row"><input type="checkbox" id="chkSugar" checked onchange="renderMarkers()"> <i class="fa-solid fa-industry icon-sugar"></i> โรงงานน้ำตาล</label>
+        <label class="filter-row"><input type="checkbox" id="chkLead" checked onchange="renderMarkers()"> <i class="fa-solid fa-vial icon-lead"></i> กลุ่มเสี่ยงตะกั่ว</label>
+        <label class="filter-row"><input type="checkbox" id="chkSili" checked onchange="renderMarkers()"> <i class="fa-solid fa-lungs icon-silicosis"></i> กลุ่มเสี่ยงซิลิโคสิส</label>
     </div>
 </div>
 
@@ -141,350 +58,97 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // เก็บข้อมูลพื้นฐานไว้เผื่อกรณีที่ข้อมูลใน Sheet ไม่มี
-    let factories = [
-        {"name":"บริษัท น้ำตาลขอนแก่น จำกัด (มหาชน)", "lat":16.73164716, "lon":102.83999402, "type":"น้ำตาล", "province":"ขอนแก่น", "district":"น้ำพอง"},
-        {"name":"บริษัท รวมเกษตรกรอุตสาหกรรม จำกัด", "lat":16.49572174, "lon":102.54111004, "type":"น้ำตาล", "province":"ขอนแก่น", "district":"หนองเรือ"},
-        {"name":"โรงงานน้ำตาลวังขนาย", "lat":16.19509515, "lon":103.11736228, "type":"น้ำตาล", "province":"มหาสารคาม", "district":"โกสุมพิสัย"},
-        {"name":"บริษัท น้ำตาลมิตรกาฬสินธุ์ จำกัด", "lat":16.46625081, "lon":104.03818563, "type":"น้ำตาล", "province":"กาฬสินธุ์", "district":"กุฉินารายณ์"},
-        {"name":"บริษัท อุตสาหกรรมน้ำตาลอีสาน จำกัด", "lat":16.93109216, "lon":103.54548324, "type":"น้ำตาล", "province":"กาฬสินธุ์", "district":"สามชัย"}
+    let allData = [];
+    
+    // ข้อมูลคงที่ (โรงไฟฟ้า + น้ำตาล)
+    const staticFactories = [
+        {"name":"บริษัท น้ำตาลขอนแก่น จำกัด", "lat":16.7316, "lon":102.8399, "type":"sugar", "prov":"ขอนแก่น"},
+        {"name":"บริษัท รวมเกษตรกรอุตสาหกรรม", "lat":16.4957, "lon":102.5411, "type":"sugar", "prov":"ขอนแก่น"},
+        {"name":"บริษัท น้ำตาลมิตรกาฬสินธุ์", "lat":16.4662, "lon":104.0381, "type":"sugar", "prov":"กาฬสินธุ์"},
+        {"name":"บริษัท ขอนแก่นกรีนพาวเวอร์", "lat":15.8582, "lon":102.6222, "type":"power", "prov":"ขอนแก่น"},
+        {"name":"บริษัท ฟินิคซ พัลพ แอนด์ เพเพอร์", "lat":16.6998, "lon":102.7492, "type":"power", "prov":"ขอนแก่น"},
+        {"name":"มิตรผล ไบโอ-เพาเวอร์ (ภูเวียง)", "lat":16.4962, "lon":102.4262, "type":"power", "prov":"ขอนแก่น"}
     ];
-    let riskPlaces = [];
 
-    window.showNotification = function(msg, isError=false) {
-        const notif = document.getElementById('notification');
-        const icon = document.getElementById('notif-icon');
-        const msgEl = document.getElementById('notif-msg');
-        notif.style.background = isError ? '#d32f2f' : '#4caf50';
-        icon.className = isError ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check';
-        msgEl.innerHTML = msg;
-        notif.style.display = 'flex';
-        setTimeout(() => { notif.style.opacity = '1'; }, 10);
-        setTimeout(() => { notif.style.opacity = '0'; setTimeout(() => { notif.style.display = 'none'; }, 300); }, 5000);
-    };
-
-    // ==========================================
-    // ฟังก์ชันดึงข้อมูลจาก Google Sheets
-    // ==========================================
-    async function fetchFromGoogleSheets() {
-        // ใช้ ID และ GID จากลิงก์ของคุณ
+    async function fetchData() {
         const sheetId = '1Q0sOZTpwpWJzMb9UM5PX4frZ1XgtBWjZr-8o6CN7_qs';
-        const gid = '292827656';
+        const gid = '292827656'; // GID ของหน้าที่มีข้อมูล 3 โรค
         const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
 
         try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('Network response was not ok');
-            const csvText = await response.text();
+            const res = await fetch(url);
+            const csv = await res.text();
+            const rows = csv.split('\n').slice(1); // ตัดหัวตารางออก
             
-            parseCSVData(csvText);
-            
-            generateRiskPlaces();
-            renderFactories();
-            showNotification(`อัปเดตข้อมูลจาก Google Sheets สำเร็จ!`);
-            
-        } catch (error) {
-            console.error('Error fetching sheet:', error);
-            showNotification('ดึงข้อมูลจาก Sheets ไม่สำเร็จ กรุณาตั้งค่าแชร์ลิงก์เป็น "Anyone with the link"', true);
-            // ถ้าดึงไม่ได้ ให้แสดงข้อมูลพื้นฐานเท่าที่มี
-            generateRiskPlaces();
-            renderFactories();
-        }
+            const sheetData = rows.map(row => {
+                const col = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/^"|"$/g, '').trim());
+                return {
+                    name: col[2], // ชื่อโรงงาน
+                    lat: parseFloat(col[3]),
+                    lon: parseFloat(col[4]),
+                    type: col[0].toLowerCase().includes('lead') ? 'lead' : 'silicosis',
+                    prov: col[6],
+                    disease: col[0]
+                };
+            }).filter(d => !isNaN(d.lat));
 
-        const loading = document.getElementById('loading');
-        loading.style.opacity = '0';
-        setTimeout(() => { loading.style.display = 'none'; }, 500);
+            allData = [...staticFactories, ...sheetData];
+            renderMarkers();
+        } catch (e) {
+            console.error(e);
+            allData = staticFactories;
+            renderMarkers();
+        }
+        document.getElementById('loading').style.display = 'none';
     }
 
-    // ฟังก์ชันแปลง CSV เป็น Object
-    function parseCSVData(text) {
-        const lines = text.split('\n');
-        let headerParsed = false;
-        let colMap = {};
+    const map = L.map('map').setView([16.43, 102.83], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    const markerLayer = L.layerGroup().addTo(map);
+
+    function renderMarkers() {
+        markerLayer.clearLayers();
+        const sel = document.getElementById('factorySelector');
+        sel.innerHTML = '<option value="">-- เลือกโรงงาน --</option>';
         
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
-            
-            const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/^"|"$/g, '').trim());
-            
-            if (!headerParsed) {
-                cols.forEach((c, idx) => {
-                    const cleanName = c.replace(/[\ufeff"']/g, '').trim(); 
-                    if(cleanName === "กลุ่มโรค" || cleanName === "disease") colMap.diseaseGroup = idx;
-                    if(cleanName === "ประเภทหรือชนิดของโรงงาน" || cleanName === "ประกอบกิจการ") colMap.businessType = idx;
-                    if(cleanName === "ชื่อโรงงาน" || cleanName === "name") colMap.name = idx;
-                    if(cleanName === "อำเภอ" || cleanName === "district") colMap.district = idx;
-                    if(cleanName === "จังหวัด" || cleanName === "province") colMap.province = idx;
-                    if(cleanName === "คนงานรวม" || cleanName === "จำนวนคนงาน") colMap.workers = idx;
-                    if(cleanName === "Latitude" || cleanName === "ละติจูด" || cleanName.toLowerCase() === "lat") colMap.lat = idx;
-                    if(cleanName === "Longitude" || cleanName === "ลองติจูด" || cleanName.toLowerCase() === "lon" || cleanName.toLowerCase() === "long") colMap.lon = idx;
-                });
+        let cp=0, cs=0, cr=0;
+
+        allData.forEach((f, i) => {
+            const isPower = f.type === 'power' && document.getElementById('chkPower').checked;
+            const isSugar = f.type === 'sugar' && document.getElementById('chkSugar').checked;
+            const isLead = f.type === 'lead' && document.getElementById('chkLead').checked;
+            const isSili = f.type === 'silicosis' && document.getElementById('chkSili').checked;
+
+            if (isPower || isSugar || isLead || isSili) {
+                let iconHtml = '';
+                if(f.type==='power') { iconHtml = '<i class="fa-solid fa-bolt icon-power"></i>'; cp++; }
+                else if(f.type==='sugar') { iconHtml = '<i class="fa-solid fa-industry icon-sugar"></i>'; cs++; }
+                else if(f.type==='lead') { iconHtml = '<i class="fa-solid fa-vial icon-lead"></i>'; cr++; }
+                else { iconHtml = '<i class="fa-solid fa-lungs icon-silicosis"></i>'; cr++; }
+
+                const m = L.marker([f.lat, f.lon], {
+                    icon: L.divIcon({ className: 'custom-icon', html: iconHtml, iconSize: [30,30] })
+                }).bindPopup(`<b>${f.name}</b><br>จังหวัด: ${f.prov}<br>ประเภท: ${f.disease || f.type}`);
                 
-                if (colMap.name !== undefined) headerParsed = true;
-                continue; 
+                m.addTo(markerLayer);
+                sel.innerHTML += `<option value="${i}">${f.name}</option>`;
             }
+        });
 
-            if (headerParsed && colMap.name !== undefined && colMap.lat !== undefined && colMap.lon !== undefined) {
-                let name = cols[colMap.name];
-                const lat = parseFloat(cols[colMap.lat]);
-                const lon = parseFloat(cols[colMap.lon]);
-                
-                if (name && !isNaN(lat) && !isNaN(lon)) {
-                    const diseaseGroup = colMap.diseaseGroup !== undefined ? cols[colMap.diseaseGroup] : "";
-                    const businessType = colMap.businessType !== undefined ? cols[colMap.businessType] : "";
-                    let district = colMap.district !== undefined ? cols[colMap.district].replace(/อ\./g, '').trim() : "";
-                    let province = colMap.province !== undefined ? cols[colMap.province].replace(/จ\.|จังหวัด/g, '').trim() : "";
-                    const workers = colMap.workers !== undefined ? (parseInt(cols[colMap.workers]) || 0) : 0;
+        document.getElementById('cPower').innerText = cp;
+        document.getElementById('cSugar').innerText = cs;
+        document.getElementById('cRisk').innerText = cr;
+    }
 
-                    let parsedType = "เสี่ยงโรค";
-                    const txtCheck = (name + " " + businessType + " " + diseaseGroup).toLowerCase();
-                    if (txtCheck.includes("น้ำตาล")) parsedType = "น้ำตาล";
-                    else if (txtCheck.includes("ไฟฟ้า") || txtCheck.includes("ชีวมวล") || txtCheck.includes("พลังงาน")) parsedType = "ไฟฟ้า";
-
-                    // กันข้อมูลซ้ำซ้อน
-                    const exists = factories.find(f => f.name.includes(name) || name.includes(f.name));
-                    if (!exists) {
-                        factories.push({
-                            name: name, lat: lat, lon: lon, type: parsedType,
-                            province: province, district: district, diseaseGroup: diseaseGroup,
-                            businessType: businessType, workers: workers
-                        });
-                    }
-                }
-            }
+    window.zoomToFactory = () => {
+        const val = document.getElementById('factorySelector').value;
+        if(val !== "") {
+            const f = allData[val];
+            map.setView([f.lat, f.lon], 14);
         }
-    }
-
-    const districtPlaces = {
-        "พล": { h: ["รพ.พล", "รพ.สต.บ้านเก่าน้อย"], s: ["รร.เมืองพลพิทยาคม", "รร.เทศบาลพล"] },
-        "น้ำพอง": { h: ["รพ.น้ำพอง", "รพ.สต.ม่วงหวาน"], s: ["รร.น้ำพองศึกษา", "รร.บ้านหนองกุง"] },
-        "หนองเรือ": { h: ["รพ.หนองเรือ", "รพ.สต.ยางคำ"], s: ["รร.หนองเรือวิทยา", "รร.บ้านยางคำ"] },
-        "กุฉินารายณ์": { h: ["รพ.สมเด็จพระยุพราชกุฉินารายณ์"], s: ["รร.กุฉินารายณ์", "รร.บัวขาว"] },
-        "โพนทอง": { h: ["รพ.โพนทอง", "รพ.สต.สระนกแก้ว"], s: ["รร.โพนทองพัฒนา", "รร.อนุบาลโพนทอง"] },
-        "เมืองขอนแก่น": { h: ["รพ.ขอนแก่น", "รพ.ศรีนครินทร์"], s: ["รร.ขอนแก่นวิทยายน", "รร.แก่นนครวิทยาลัย"] },
-        "ชุมแพ": { h: ["รพ.ชุมแพ", "รพ.สต.โนนหัน"], s: ["รร.ชุมแพศึกษา", "รร.อนุบาลชุมแพ"] },
-        "ภูผาม่าน": { h: ["รพ.ภูผาม่าน", "รพ.สต.โนนคอม"], s: ["รร.ภูผาม่าน", "รร.อนุบาลภูผาม่าน"] },
-        "สามชัย": { h: ["รพ.สามชัย"], s: ["รร.สามชัย"] },
-        "โกสุมพิสัย": { h: ["รพ.โกสุมพิสัย"], s: ["รร.โกสุมวิทยาสรรค์"] },
-        "พระยืน": { h: ["รพ.พระยืน"], s: ["รร.พระยืนวิทยาคาร"] },
-        "จังหาร": { h: ["รพ.จังหาร"], s: ["รร.จังหารฐิตวิริยาประชาสรรค์"] }
     };
 
-    function generateRiskPlaces() {
-        riskPlaces = [];
-        factories.forEach((f, idx) => {
-            const dData = districtPlaces[f.district] || { h: ["รพ.สต.ใกล้เคียง"], s: ["รร.ชุมชนใกล้เคียง"] };
-            for(let i=0; i<3; i++) {
-                const latOffset = (Math.random() - 0.5) * 0.05;
-                const lonOffset = (Math.random() - 0.5) * 0.05;
-                riskPlaces.push({ name: dData.s[Math.floor(Math.random() * dData.s.length)], type: 'school', lat: f.lat + latOffset, lon: f.lon + lonOffset });
-                riskPlaces.push({ name: dData.h[Math.floor(Math.random() * dData.h.length)], type: 'hospital', lat: f.lat + (latOffset * 0.7), lon: f.lon + (lonOffset * 0.7) });
-            }
-        });
-    }
-
-    const map = L.map('map', { zoomControl: false }).setView([16.35, 103.3], 8);
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(map);
-
-    const factoryLayer = L.layerGroup().addTo(map);
-    const riskLayerAll = L.layerGroup().addTo(map);
-    const windLayer = L.layerGroup().addTo(map);
-
-    function getDestination(lat, lon, distanceMeters, bearingDegrees) {
-        const R = 6378137; const brng = bearingDegrees * Math.PI / 180; const lat1 = lat * Math.PI / 180; const lon1 = lon * Math.PI / 180;
-        const lat2 = Math.asin(Math.sin(lat1) * Math.cos(distanceMeters / R) + Math.cos(lat1) * Math.sin(distanceMeters / R) * Math.cos(brng));
-        const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(distanceMeters / R) * Math.cos(lat1), Math.cos(distanceMeters / R) - Math.sin(lat1) * Math.sin(lat2));
-        return [lat2 * 180 / Math.PI, lon2 * 180 / Math.PI];
-    }
-
-    async function drawWindPlume(lat, lon) {
-        windLayer.clearLayers();
-        if(!document.getElementById('chkWind').checked) return;
-
-        let windDir = 0; let windSpeed = 0; let isRealTime = false; let obsTimeStr = "";
-        try {
-            const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=Asia/Bangkok`;
-            const response = await fetch(apiUrl);
-            const data = await response.json();
-            if (data.current_weather) {
-                windDir = data.current_weather.winddirection;
-                windSpeed = data.current_weather.windspeed;
-                isRealTime = true;
-                const apiTime = new Date(data.current_weather.time);
-                obsTimeStr = apiTime.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' น.';
-            }
-        } catch (error) {
-            windDir = Math.floor(Math.random() * 360); windSpeed = Math.floor(Math.random() * 15) + 5;
-        }
-
-        const blowTo = (windDir + 180) % 360;
-        const pointCenter = [lat, lon];
-        const pointLeft = getDestination(lat, lon, 5000, blowTo - 20);
-        const pointRight = getDestination(lat, lon, 5000, blowTo + 20);
-        
-        const plume = L.polygon([pointCenter, pointLeft, pointRight], { color: '#b0bec5', weight: 1, fillColor: '#607d8b', fillOpacity: 0.45 }).addTo(windLayer);
-
-        const dirs = ['เหนือ','ตะวันออกเฉียงเหนือ','ตะวันออก','ตะวันออกเฉียงใต้','ใต้','ตะวันตกเฉียงใต้','ตะวันตก','ตะวันตกเฉียงเหนือ'];
-        const dirName = dirs[Math.round(windDir / 45) % 8];
-        const statusText = isRealTime 
-            ? `<span style="color:#2e7d32; font-size:10px; display:block; margin-top:4px;"><i class="fa-solid fa-circle-check"></i> ข้อมูลลม Real-time: ${obsTimeStr}</span>`
-            : `<span style="color:#d32f2f; font-size:10px; display:block; margin-top:4px;"><i class="fa-solid fa-triangle-exclamation"></i> ข้อมูลลมจำลอง</span>`;
-        
-        plume.bindTooltip(`<div style="font-family:'Sarabun';"><b><i class="fa-solid fa-wind"></i> พื้นที่เฝ้าระวังท้ายลม</b><br>พัดจากทิศ: <b>${dirName}</b> (${windDir}°)<br>ความเร็วลม: <b>${windSpeed} กม./ชม.</b>${statusText}</div>`, {sticky: true});
-    }
-
-    function renderFactories() {
-        factoryLayer.clearLayers();
-        const selector = document.getElementById('factorySelector');
-        selector.innerHTML = '<option value="">-- ค้นหาสถานประกอบการ --</option>';
-
-        const checkboxes = document.querySelectorAll('.prov-chk');
-        const selectedProvs = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
-        
-        const showPower = document.getElementById('chkPower').checked;
-        const showSugar = document.getElementById('chkSugar').checked;
-        const showLead = document.getElementById('chkLead').checked;
-        const showSilicosis = document.getElementById('chkSilicosis').checked;
-        const showSiliAsbes = document.getElementById('chkSiliAsbes').checked;
-
-        let countPower = 0; let countSugar = 0; 
-        let countLead = 0; let countSilicosis = 0; let countSiliAsbes = 0;
-
-        factories.forEach((f, i) => {
-            if (!selectedProvs.includes(f.province.trim()) && f.province !== "") return;
-            
-            let isLead = false, isSilicosis = false, isSiliAsbes = false;
-            
-            if (f.type === 'เสี่ยงโรค') {
-                const dg = (f.diseaseGroup || "").toLowerCase();
-                const hasLead = dg.includes('lead') || dg.includes('ตะกั่ว');
-                const hasSili = dg.includes('sili') || dg.includes('ซิลิโค');
-                const hasAsbes = dg.includes('asbes') || dg.includes('แอสเบส') || dg.includes('ใยหิน');
-
-                if (hasSili && hasAsbes) isSiliAsbes = true;
-                else if (hasAsbes) isSiliAsbes = true;
-                else if (hasSili) isSilicosis = true;
-                else if (hasLead) isLead = true;
-                else {
-                    const bt = (f.businessType || "").toLowerCase();
-                    if (bt.includes('หิน') || bt.includes('เหมือง')) isSilicosis = true;
-                    else if (bt.includes('วิทยุ') || bt.includes('โทรทัศน์') || bt.includes('แบตเตอรี่')) isLead = true;
-                    else isSilicosis = true; 
-                }
-            }
-
-            if (f.type === 'ไฟฟ้า' && !showPower) return;
-            if (f.type === 'น้ำตาล' && !showSugar) return;
-            
-            if (f.type === 'เสี่ยงโรค') {
-                if (isLead && !showLead) return;
-                if (isSilicosis && !showSilicosis) return;
-                if (isSiliAsbes && !showSiliAsbes) return;
-                if (!isLead && !isSilicosis && !isSiliAsbes) return;
-            }
-            
-            if (f.type === 'ไฟฟ้า') countPower++;
-            else if (f.type === 'น้ำตาล') countSugar++;
-            else if (f.type === 'เสี่ยงโรค') {
-                if (isLead) countLead++;
-                else if (isSiliAsbes) countSiliAsbes++;
-                else if (isSilicosis) countSilicosis++;
-            }
-
-            let iconHtml = '';
-            let popupExtra = '';
-
-            if (f.type === 'ไฟฟ้า') {
-                iconHtml = '<i class="fa-solid fa-bolt icon-power"></i>';
-                popupExtra = `<i class="fa-solid fa-tag"></i> <b>ประเภท:</b> โรงไฟฟ้าชีวมวล`;
-            } else if (f.type === 'น้ำตาล') {
-                iconHtml = '<i class="fa-solid fa-industry icon-sugar"></i>';
-                popupExtra = `<i class="fa-solid fa-tag"></i> <b>ประเภท:</b> โรงงานน้ำตาล`;
-            } else if (f.type === 'เสี่ยงโรค') {
-                if (isLead) {
-                    iconHtml = '<i class="fa-solid fa-vial icon-lead"></i>';
-                    popupExtra = `<i class="fa-solid fa-vial icon-lead"></i> <b>กลุ่มเสี่ยง:</b> <span style="color:#9c27b0; font-weight:bold;">ตะกั่ว (Lead)</span>`;
-                } else if (isSiliAsbes) {
-                    iconHtml = '<i class="fa-solid fa-smog icon-sili-asbes"></i>';
-                    popupExtra = `<i class="fa-solid fa-smog icon-sili-asbes"></i> <b>กลุ่มเสี่ยง:</b> <span style="color:#d84315; font-weight:bold;">ซิลิโคสิส & ใยหิน</span>`;
-                } else {
-                    iconHtml = '<i class="fa-solid fa-lungs icon-silicosis"></i>';
-                    popupExtra = `<i class="fa-solid fa-lungs icon-silicosis"></i> <b>กลุ่มเสี่ยง:</b> <span style="color:#795548; font-weight:bold;">ซิลิโคสิส</span>`;
-                }
-                popupExtra += `<br><i class="fa-solid fa-briefcase"></i> <b>กิจการ:</b> ${f.businessType || '-'}`;
-                popupExtra += `<br><i class="fa-solid fa-users"></i> <b>คนงาน:</b> ${f.workers ? f.workers + ' คน' : '-'}`;
-            }
-
-            selector.innerHTML += `<option value="${i}">${f.name} (${f.province})</option>`;
-
-            const markerIcon = L.divIcon({ className: 'custom-icon', html: iconHtml, iconSize: [28, 28], iconAnchor: [14, 14] });
-            const popupContent = `
-                <div style="font-family:'Sarabun'; font-size:13px; min-width:200px;">
-                    <strong style="font-size:15px; color:#333;">${f.name}</strong><br>
-                    <span style="color:#666;"><i class="fa-solid fa-location-dot"></i> อ.${f.district} จ.${f.province}</span><br>
-                    <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
-                    ${popupExtra}
-                    <br><button class="btn-google-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=$$${f.lat},${f.lon}', '_blank')">
-                        <i class="fa-solid fa-map-location-dot"></i> นำทางด้วย Google Maps
-                    </button>
-                </div>
-            `;
-
-            const marker = L.marker([f.lat, f.lon], { icon: markerIcon }).bindPopup(popupContent);
-            marker.on('click', () => drawWindPlume(f.lat, f.lon));
-            marker.addTo(factoryLayer);
-        });
-
-        const countAll = countPower + countSugar + countLead + countSilicosis + countSiliAsbes;
-        document.getElementById('countAll').innerText = countAll;
-        document.getElementById('countPower').innerText = countPower;
-        document.getElementById('countSugar').innerText = countSugar;
-        document.getElementById('countLead').innerText = countLead;
-        document.getElementById('countSilicosis').innerText = countSilicosis;
-        document.getElementById('countSiliAsbes').innerText = countSiliAsbes;
-
-        windLayer.clearLayers();
-    }
-
-    window.updateFilters = function() { renderFactories(); };
-
-    window.zoomToFactory = function() {
-        const selector = document.getElementById('factorySelector');
-        const index = selector.value;
-        if (index === "") return showNotification("กรุณาเลือกสถานประกอบการ", true);
-        const f = factories[index];
-        map.setView([f.lat, f.lon], 14, { animate: true, duration: 1.5 });
-        factoryLayer.eachLayer((layer) => {
-            const latLng = layer.getLatLng();
-            if (latLng.lat === f.lat && latLng.lng === f.lon) {
-                layer.openPopup();
-                drawWindPlume(f.lat, f.lon);
-            }
-        });
-    };
-
-    window.toggleAllRiskPlaces = function(isShow) {
-        riskLayerAll.clearLayers();
-        if (!isShow) return;
-        riskPlaces.forEach(p => {
-            const iconClass = p.type === 'school' ? 'risk-school' : 'risk-hospital';
-            const iconFa = p.type === 'school' ? 'fa-school' : 'fa-house-medical';
-            const riskIcon = L.divIcon({ className: `risk-marker ${iconClass}`, html: `<i class="fa-solid ${iconFa}"></i>`, iconSize: [20, 20], iconAnchor: [10, 10] });
-            L.marker([p.lat, p.lon], { icon: riskIcon }).bindTooltip(`<b>${p.name}</b>`, { direction: 'top', className: 'risk-tooltip' }).addTo(riskLayerAll);
-        });
-    };
-
-    window.toggleWind = function() {
-        if (!document.getElementById('chkWind').checked) windLayer.clearLayers();
-    };
-
-    window.onload = () => {
-        // โหลดข้อมูลจาก Sheets ทันทีที่เปิดหน้าเว็บ
-        fetchFromGoogleSheets();
-    };
+    fetchData();
 </script>
 </body>
 </html>
